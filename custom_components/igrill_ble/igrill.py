@@ -14,6 +14,7 @@ from homeassistant.components.bluetooth.passive_update_processor import (
     PassiveBluetoothEntityKey,
 )
 from homeassistant.core import callback
+from homeassistant.const import UnitOfTemperature
 from .const import SensorType
 import asyncio
 from bluetooth_sensor_state_data import BluetoothData
@@ -83,7 +84,6 @@ class IDevicePeripheral(BluetoothData):
         self.temp_chars = {}
         self.temp_threshold_chars = {}
         self.retrieved_device_info = False
-        self.is_celsius = False
         self.client = None
         self._listeners = []
         self.data = {}
@@ -131,7 +131,7 @@ class IDevicePeripheral(BluetoothData):
     def update_temp_sensor(self, payload, name):
         temp = payload[0] + (payload[1] * 256)
         temp = float(temp) if float(temp) != 63536.0 else 0
-        temp_unit = SensorLibrary.TEMPERATURE__CELSIUS
+        temp_unit = BaseSensorDescription(device_class=SensorDeviceClass.TEMPERATURE, native_unit_of_measurement=Units.TEMP_FAHRENHEIT)
         self.update_predefined_sensor(temp_unit, temp, name)
         self.update_listeners()
 
@@ -236,7 +236,7 @@ class IDevicePeripheral(BluetoothData):
             for char, probe_id in self.temp_chars.items():
                 await self.start_notify_temp(char, f"probe_{probe_id}")
 
-            if (await self.client.get_services()).get_characteristic(
+            if self.client.services.get_characteristic(
                 UUIDS.AMBIENT_TEMPERATURE
             ):
                 self.has_ambient_temp = True
